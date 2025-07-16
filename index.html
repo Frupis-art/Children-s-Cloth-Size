@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детские параметры</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+/* Основные стили */
+:root {
+    --primary: #4361ee;
+    --secondary: #3f37c9;
+    --success: #4cc9f0;
+    --danger: #f72585;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --gray: #6c757d;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f0f2f5;
+    color: var(--dark);
+    line-height: 1.6;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+    flex-wrap: wrap;
+}
+
+.auth-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+#email, #password {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    min-width: 150px;
+}
+
+button {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: var(--secondary);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+}
+
+.btn-success {
+    background-color: #2ecc71;
+}
+
+#logoutBtn {
+    display: none;
+    background-color: #e74c3c;
+}
+
+/* Горизонтальная прокрутка детей */
+.children-grid {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 20px; /* Увеличили отступ снизу */
+    scrollbar-width: thick; /* Толщина полосы прокрутки */
+    scrollbar-color: var(--primary) #f0f0f0;
+    -webkit-overflow-scrolling: touch;
+    gap: 15px;
+}
+
+.children-grid::-webkit-scrollbar {
+    height: 12px;
+}
+
+.children-grid::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 6px;
+}
+
+.children-grid::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 6px;
+}
+
+/* Обновленные стили карточки ребенка */
+.child-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 12px; /* уменьшаем отступы */
+    min-width: 220px; /* было 280px */
+    max-width: 260px; /* добавляем ограничение по ширине */
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.child-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.gender-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    align-self: flex-start;
+}
+
+.boy {
+    background-color: #d1ecff;
+    color: #0a58ca;
+}
+
+.girl {
+    background-color: #f8d7da;
+    color: #b02a37;
+}
+
+.child-info {
+    margin-bottom: 10px;
+    color: var(--gray);
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.age-info {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-left: 10px;
+}
+
+/* Более компактные параметры */
+.params-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* уменьшаем промежуток */
+    margin-bottom: 10px; /* уменьшаем отступ */
+}
+
+.param-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px; /* минимальный отступ */
+}
+
+.param-label {
+    flex: 1;
+    text-align: left;
+    font-size: 0.8rem; /* уменьшаем шрифт */
+    white-space: nowrap; /* предотвращаем перенос */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 5px;
+}
+
+.param-value {
+    width: 70px; /* было 90px */
+    padding: 5px; /* уменьшаем padding */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: right;
+    font-size: 0.85rem; /* уменьшаем шрифт */
+    background-color: #f9f9f9;
+}
+
+.add-param-btn {
+    background-color: #e9ecef;
+    color: var(--dark);
+    border: none;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 10px 0;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.save-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    margin-top: 5px;
+}
+
+/* Стили истории записей */
+.history-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.history-title {
+    font-size: 0.85rem; /* уменьшен размер */
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.history-item {
+    background: #f8f9fa;
+    border-left: 4px solid var(--primary);
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.history-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.history-date {
+    font-weight: 600;
+    flex-grow: 1;
+    font-size: 0.78rem; /* уменьшаем размер */
+    font-weight: 500; /* нормальная жирность */
+}
+
+.delete-history-btn {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 10px;
+}
+
+.history-details {
+    display: none;
+    padding-top: 10px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.history-details[style*="block"] {
+    display: block;
+    max-height: 500px;
+    padding-top: 10px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 500px; }
+}
+
+.history-params {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+.history-params .param-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.history-params .param-label {
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+.history-params .param-value {
+    font-weight: 600;
+}
+
+.history-params .param-label,
+.history-params .param-value {
+    font-size: 0.75rem; /* уменьшаем размер текста */
+}
+
+/* Стиль для даты рождения */
+
+.birth-info {
+    margin-bottom: 12px;
+}
+
+.birthdate {
+    color: #666;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+/* Стиль для возраста */
+.age-info {
+    color: #444;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: left;
+}
+
+/* Уменьшаем кнопку удаления */
+.delete-history-btn {
+    font-size: 1.0rem;
+}
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.radio-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 8px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.modal-buttons button {
+    flex: 1;
+}
+
+.add-child-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background-color: #4361ee;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: none;
+    cursor: pointer;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.icon-controls {
+    display: flex;
+    justify-content: center; /* Центрируем кнопки */
+    gap: 15px; /* Увеличим расстояние между кнопками */
+    margin: 15px 0;
+    align-items: center;
+}
+
+.icon-btn {
+    /* Размеры и форма */
+    width: 35px;
+    height: 35px;
+    
+    /* Сброс стандартных стилей кнопки */
+    padding: 0;
+    margin: 0;
+    border: none;
+    
+    /* Центрирование содержимого */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Стили внешнего вида */
+    background-color: #f0f2f5;
+    color: #212529;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    
+    /* Гарантия отсутствия деформации */
+    min-width: 35px !important;
+    min-height: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
+    border-radius: 50% !important;
+    line-height: 1;
+    overflow: hidden; /* Добавьте это свойство */
+    line-height: 1; /* Добавьте это свойство */
+}
+
+.icon-btn:hover {
+    background-color: #e0e0e0; /* Слегка темнее при наведении */
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.history-age {
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #4361ee;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.param-row.full-width {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #eee;
+}
+
+/* Управление детьми */
+.children-management {
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    margin-left: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.children-controls {
+    display: flex;
+    flex-direction: column; /* Кнопки друг под другом */
+    gap: 15px;
+    height: 100%;
+    justify-content: center;
+}
+
+.child-control-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #4361ee;
+    color: white;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+}
+
+
+#removeChildBtn {
+    background-color: #f72585;
+}
+
+.child-control-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+#removeChildBtn:hover {
+    background-color: #e01e75;
+}
+
+/* Удаляем старую плавающую кнопку */
+.add-child-btn {
+    display: none !important;
+}
+
+.child-card.active {
+    background-color: #f0f7ff;
+    box-shadow: 0 1px 10px rgba(67, 97, 238, 0.3);
+    border: 2px solid #4361ee;
+    transform: translateY(3px);
+    transition: all 0.05s ease;
+    z-index: 5;
+}
+
+
+.child-control-btn::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.child-control-btn:hover::after {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Стили для карточки управления */
+.child-control-card {
+        /* Обеспечиваем что блок управления будет в одном ряду */
+    flex-shrink: 0;
+    /* Оптимальная ширина */
+    min-width: 150px;
+    max-width: 150px;
+    /* Центрируем содержимое */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 12px;
+    height: 150px; /* Фиксируем высоту */
+    flex: 0 0 auto;
+    border: 2px dashed #e0e0e0;
+    margin-left: 15px; /* Отступ от карточек */
+    align-self: center; /* Выравнивание по вертикали */
+}
+
+
+.child-control-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4);
+}
+
+#removeChildBtn {
+    background-color: #f72585;
+}
+
+#removeChildBtn:hover {
+    background-color: #e01e75;
+}
+
+.zodiac-info {
+    color: #2ecc71; /* Зеленый цвет */
+    font-size: 0.75rem;
+    font-weight: 300; /* Тонкий шрифт */
+    text-transform: lowercase; /* Все буквы строчные */
+}
+/* Адаптация для мобильных */
+@media (max-width: 480px) {
+    .child-control-card {
+        min-width: 120px;
+        height: 120px;
+    }
+    
+    .child-control-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+    }
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 360px) {
+    .icon-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Детские параметры 📏</h1>
+            <div class="auth-section">
+                <input type="email" id="email" placeholder="Ваш email" class="form-input">
+                <input type="password" id="password" placeholder="Пароль" class="form-input">
+                <button id="loginBtn">Войти</button>
+                <button id="registerBtn">Регистрация</button>
+                <button id="logoutBtn" class="hidden">Выйти</button>
+            </div>
+        </header>
+        
+<!-- Основной контейнер с детьми -->
+<div id="childrenContainer" class="children-grid">
+    <!-- Карточки детей будут добавляться сюда -->
+    
+    <!-- Блок управления внутри контейнера -->
+    <div class="child-control-card">
+        <div class="children-controls">
+            <button id="removeChildBtn" class="child-control-btn" title="Удалить текущего ребенка">-</button>
+            <button id="addChildBtn" class="child-control-btn" title="Добавить ребенка">+</button>
+        </div>
+    </div>
+</div>
+        
+        <div class="modal" id="addChildModal">
+            <div class="modal-content">
+                <h2 class="modal-title">Добавить ребенка</h2>
+                <div class="form-group">
+                    <label class="form-label">Имя</label>
+                    <input type="text" id="childName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата рождения</label>
+                    <input type="date" id="childBirthdate" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Пол</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="boy" checked> Мальчик
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="gender" value="girl"> Девочка
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="cancelAddChild">Отмена</button>
+                    <button id="saveChild" class="btn-success">Сохранить</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="addParamModal">
+            <div class="modal-content">
+                <h2 class="modal-title">Добавить параметр</h2>
+                <div class="form-group">
+                    <label class="form-label">Название параметра</label>
+                    <input type="text" id="paramName" class="form-input" required>
+                </div>
+                <div class="modal-buttons">
+                    <button id="cancelAddParam">Отмена</button>
+                    <button id="saveParam" class="btn-success">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+// Конфигурация Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBqS5DoB0bHqgPcrCEBCq4NFTrhBAIJsVM",
+  authDomain: "childrens-cloth-size.firebaseapp.com",
+  projectId: "childrens-cloth-size",
+  storageBucket: "childrens-cloth-size.firebasestorage.app",
+  messagingSenderId: "602457850693",
+  appId: "1:602457850693:web:7febcbb31ddca8730b742c"
+};
+
+// Инициализация Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+        
+        // DOM элементы
+const childrenContainer = document.getElementById('childrenContainer');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const addChildBtn = document.getElementById('addChildBtn');
+const addChildModal = document.getElementById('addChildModal');
+const addParamModal = document.getElementById('addParamModal');
+const saveChildBtn = document.getElementById('saveChild');
+const cancelAddChild = document.getElementById('cancelAddChild');
+const saveParamBtn = document.getElementById('saveParam');
+const cancelAddParam = document.getElementById('cancelAddParam');
+        // Текущий пользователь и данные
+let currentUser = null;
+let childrenData = {};
+let currentChildIdForParam = null;
+
+        // Знаки зодиака и года
+        const zodiacSigns = [
+            "Козерог", "Водолей", "Рыбы", "Овен", 
+            "Телец", "Близнецы", "Рак", "Лев", 
+            "Дева", "Весы", "Скорпион", "Стрелец"
+        ];
+        
+        const chineseZodiac = [
+            "Крыса", "Бык", "Тигр", "Кролик", 
+            "Дракон", "Змея", "Лошадь", "Коза", 
+            "Обезьяна", "Петух", "Собака", "Свинья"
+        ];
+        
+        // Инициализация приложения
+function init() {
+    setupEventListeners();
+    checkAuthState();
+    
+    // Используем новую кнопку из панели управления
+document.getElementById('addChildBtn').addEventListener('click', () => {
+    addChildModal.style.display = 'flex';
+});
+    
+document.getElementById('removeChildBtn').addEventListener('click', deleteActiveChild);}
+
+       // Новая функция для удаления активного ребенка
+function deleteActiveChild() {
+    if (!currentActiveChildId || !childrenData[currentActiveChildId]) {
+        alert('Выберите ребенка, кликнув на его карточку');
+        return;
+    }
+    
+    if (confirm(`Удалить данные о ребенке "${childrenData[currentActiveChildId].name}"?`)) {
+        deleteChild(currentActiveChildId);
+        currentActiveChildId = null;
+    }
+}
+        // Настройка обработчиков событий
+function setupEventListeners() {
+    cancelAddChild.addEventListener('click', () => addChildModal.style.display = 'none');
+    saveChildBtn.addEventListener('click', saveChild);
+    cancelAddParam.addEventListener('click', () => addParamModal.style.display = 'none');
+    saveParamBtn.addEventListener('click', saveCustomParam);
+    loginBtn.addEventListener('click', login);
+    registerBtn.addEventListener('click', register);
+    logoutBtn.addEventListener('click', logout);
+}
+
+        
+        // Аутентификация
+function checkAuthState() {
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            emailInput.style.display = 'none';
+            passwordInput.style.display = 'none';
+            loginBtn.style.display = 'none';
+            registerBtn.style.display = 'none';
+            logoutBtn.style.display = 'block';
+            
+            // ПОКАЗЫВАЕМ кнопки управления
+            document.querySelector('.child-control-card').style.display = 'flex';
+            loadChildrenData();
+        } else {
+            currentUser = null;
+            emailInput.style.display = 'block';
+            passwordInput.style.display = 'block';
+            loginBtn.style.display = 'block';
+            registerBtn.style.display = 'block';
+            logoutBtn.style.display = 'none';
+            
+            // СКРЫВАЕМ кнопки управления и очищаем контейнер
+            document.querySelector('.child-control-card').style.display = 'none';
+            childrenContainer.innerHTML = '<p>Войдите, чтобы увидеть данные</p>';
+        }
+    });
+}
+        
+// Функция входа
+function login() {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    
+    if (!isValidEmail(email)) {
+        alert("Введите корректный email адрес");
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert("Пароль должен содержать минимум 6 символов");
+        return;
+    }
+    
+    const originalText = loginBtn.textContent;
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Вход...';
+    
+    auth.signInWithEmailAndPassword(email, password)
+        .catch(error => {
+            console.error("Ошибка входа:", error);
+            passwordInput.value = '';
+            alert(`Ошибка входа: ${error.message}`);
+            loginBtn.disabled = false;
+            loginBtn.textContent = originalText;
+        });
+}
+
+// Функция выхода
+function logout() {
+    auth.signOut()
+        .then(() => {
+            console.log("Пользователь вышел");
+        })
+        .catch(error => {
+            console.error("Ошибка при выходе:", error);
+            alert("Ошибка при выходе: " + error.message);
+        });
+}
+
+// Валидация email
+function isValidEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+// ... остальной код
+// Функция регистрации
+// Функция регистрации
+function register() {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    
+    if (!email || !password) {
+        alert("Введите email и пароль");
+        return;
+    }
+    
+    // Сохраняем исходный текст кнопки
+    const originalText = registerBtn.textContent;
+    
+    // Блокируем кнопку и меняем текст
+    registerBtn.disabled = true;
+    registerBtn.textContent = 'Регистрация...';
+    
+    auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            console.log("User registered:", userCredential.user.uid);
+            alert('Регистрация успешна!');
+            // Восстанавливаем кнопку
+            registerBtn.disabled = false;
+            registerBtn.textContent = originalText;
+        })
+        .catch(error => {
+            console.error("Registration error:", error);
+            alert(`Ошибка регистрации: ${error.message}`);
+            // Восстанавливаем кнопку
+            registerBtn.disabled = false;
+            registerBtn.textContent = originalText;
+        });
+}
+
+        
+        // Работа с данными детей
+// Исправленная функция loadChildrenData
+async function loadChildrenData() {
+    if (!currentUser) return;
+    
+    try {
+        const snapshot = await db.collection('children')
+            .where('userId', '==', currentUser.uid)
+            .get();
+        
+        childrenData = {};
+        
+        // Удаляем только карточки детей, оставляя блок управления
+        const childCards = childrenContainer.querySelectorAll('.child-card');
+        childCards.forEach(card => card.remove());
+        
+        const children = [];
+        snapshot.forEach(doc => {
+            // Базовое извлечение данных
+            const childData = doc.data();
+            childData.customParams = childData.customParams || {};
+            children.push({
+                id: doc.id,
+                data: childData
+            });
+        });
+        
+        // Сортировка детей по дате рождения
+        children.sort((a, b) => {
+            try {
+                const dateA = new Date(a.data.birthdate);
+                const dateB = new Date(b.data.birthdate);
+                return dateB - dateA;
+            } catch (e) {
+                return 0;
+            }
+        });
+        
+        // Обработка каждого ребенка
+        for (const child of children) {
+            const childData = child.data;
+            
+            // Инициализация параметров
+            childData.params = childData.params || {
+                height: '',
+                weight: '',
+                shoeSize: '',
+                clothingSize: ''
+            };
+            
+            childData.customParams = childData.customParams || {};
+            childData.records = childData.records || [];
+            
+            // Если есть записи, попробуем обновить параметры из последней
+            if (childData.records.length > 0) {
+                try {
+                    // Найдем последнюю запись без сортировки
+                    let latestRecord = null;
+                    let latestDate = 0;
+                    
+                    for (const record of childData.records) {
+                        try {
+                            const recordDate = new Date(record.date).getTime();
+                            if (recordDate > latestDate) {
+                                latestDate = recordDate;
+                                latestRecord = record;
+                            }
+                        } catch (e) {
+                            console.warn("Ошибка обработки даты записи", e);
+                        }
+                    }
+                    
+                    // Обновим параметры из последней записи
+                    if (latestRecord) {
+                        if (latestRecord.params) {
+                            for (const key in latestRecord.params) {
+                                if (Object.hasOwnProperty.call(latestRecord.params, key)) {
+                                    childData.params[key] = latestRecord.params[key];
+                                }
+                            }
+                        }
+                        
+                        if (latestRecord.customParams) {
+                            for (const key in latestRecord.customParams) {
+                                if (Object.hasOwnProperty.call(latestRecord.customParams, key)) {
+                                    childData.customParams[key] = latestRecord.customParams[key];
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Ошибка обработки записей для ребенка", child.id, e);
+                }
+            }
+            
+            childrenData[child.id] = childData;
+            renderChildCard(child.id, childData);
+        }
+        
+if (children.length === 0) {
+    const message = document.createElement('p');
+    message.textContent = 'Добавьте первого ребенка';
+    message.style.padding = '20px';
+    message.style.textAlign = 'center';
+    
+    // Вставляем сообщение перед блоком управления
+    const controlCard = document.querySelector('.child-control-card');
+    childrenContainer.insertBefore(message, controlCard);
+}
+
+    } catch (error) {
+        console.error("Ошибка загрузки детей:", error);
+        alert('Ошибка загрузки данных. Проверьте подключение к интернету.');
+    }
+}
+        
+function saveChild() {
+  if (!currentUser || !currentUser.uid) {
+    alert("Ошибка: Пользователь не аутентифицирован");
+    return;
+  }
+  
+  const name = document.getElementById('childName').value;
+  const birthdate = document.getElementById('childBirthdate').value;
+  const gender = document.querySelector('input[name="gender"]:checked').value;
+  
+  if (!name || !birthdate) {
+    alert('Заполните все поля');
+    return;
+  }
+  
+  const childData = {
+    name,
+    birthdate,
+    gender,
+    userId: currentUser.uid,
+    params: {
+      height: '',
+      weight: '',
+      shoeSize: '',
+      clothingSize: ''
+    },
+    customParams: {},
+    records: []
+  };
+  
+  db.collection('children').add(childData)
+    .then(docRef => {
+      console.log("Child saved with ID:", docRef.id);
+      
+      // Добавляем ребенка в локальные данные
+      childrenData[docRef.id] = childData;
+      
+      // Рендерим карточку
+      renderChildCard(docRef.id, childData);
+      
+      // Закрываем модальное окно
+      addChildModal.style.display = 'none';
+      
+      // Сбрасываем значения формы
+      document.getElementById('childName').value = '';
+      document.getElementById('childBirthdate').value = '';
+      
+            // Прокручиваем к новому ребенку (который теперь перед кнопками)
+setTimeout(() => {
+    // Прокручиваем к блоку управления (справа)
+    childrenContainer.scrollTo({
+        left: childrenContainer.scrollWidth,
+        behavior: 'smooth'
+    });
+}, 300);
+        })
+    .catch(error => {
+      console.error("Full save error:", error);
+      alert(`Ошибка сохранения: ${error.message}`);
+    });
+}
+
+
+let currentActiveChildId = null;       
+function renderChildCard(childId, childData) {
+    const card = document.createElement('div');
+    card.className = 'child-card';
+    card.dataset.childId = childId;
+    
+    // Проверка и инициализация данных
+    childData.params = childData.params || {};
+    childData.customParams = childData.customParams || {};
+    
+    // Обработчик клика для активации карточки
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.child-card').forEach(c => {
+            c.classList.remove('active');
+        });
+        card.classList.add('active');
+        currentActiveChildId = childId;
+    });
+    
+    // Рассчет возраста
+    const today = new Date();
+    const birthDate = new Date(childData.birthdate);
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    let days = today.getDate() - birthDate.getDate();
+    
+    if (days < 0) {
+        months--;
+        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    }
+    
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+    
+    // Форматируем возраст
+    const formattedAge = formatAge(years, months, days);
+    
+    card.innerHTML = `
+<div class="card-header">
+    <div class="child-name">${childData.name}</div>
+    <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+        <span class="gender-badge ${childData.gender}">
+            ${childData.gender === 'boy' ? '♂' : '♀'}
+        </span>
+        <span class="zodiac-info">
+            ${getZodiacSign(birthDate)}, ${getChineseZodiac(birthDate.getFullYear())}
+        </span>
+    </div>
+</div> 
+
+<!-- ДАТА И ВОЗРАСТ -->
+<div class="birth-info">
+    <div class="birthdate">${formatDate(birthDate)}</div>
+    <div class="age-info">${formattedAge}</div>
+</div>
+
+<!-- Остальной код без изменений -->
+<div class="params-container">
+    <div class="param-row">
+        <div class="param-label">Рост</div>
+        <input type="text" class="param-value" data-param="height" value="${childData.params.height || ''}">
+    </div>
+    
+    <div class="param-row">
+        <div class="param-label">Вес</div>
+        <input type="text" class="param-value" data-param="weight" value="${childData.params.weight || ''}">
+    </div>
+    
+    <div class="param-row">
+        <div class="param-label">Обувь</div>
+        <input type="text" class="param-value" data-param="shoeSize" value="${childData.params.shoeSize || ''}">
+    </div>
+    
+    <div class="param-row">
+        <div class="param-label">Одежда</div>
+        <input type="text" class="param-value" data-param="clothingSize" value="${childData.params.clothingSize || ''}">
+    </div>
+        <div id="customParams-${childId}"></div>
+</div>
+    
+<div class="icon-controls">
+    <button class="icon-btn" data-child-id="${childId}" title="Добавить параметр">
+        +
+    </button>
+    <button class="icon-btn" data-child-id="${childId}" title="Удалить параметр">
+        -
+    </button>
+    <button class="icon-btn" title="Сохранить запись">
+        💾
+    </button>
+</div>
+
+    
+    <div class="history-section">
+        <div class="history-title">История записей</div>
+        <div id="history-${childId}">
+            <!-- История записей будет здесь -->
+        </div>
+    </div>
+    `;
+    
+    // Вставляем карточку перед блоком управления
+    const controlCard = document.querySelector('.child-control-card');
+    childrenContainer.insertBefore(card, controlCard);
+    
+    // Инициализация компонентов
+    renderCustomParams(childId, childData.customParams);
+    renderHistory(childId, childData.records);
+    
+    // Обработчики событий
+    card.querySelector('.icon-btn:nth-child(3)').addEventListener('click', () => {
+        saveRecord(childId).then(() => {
+            renderHistory(childId, childrenData[childId].records);
+        });
+    });
+    
+    card.querySelector('.icon-btn:nth-child(1)').addEventListener('click', (e) => {
+        currentChildIdForParam = e.target.closest('.icon-btn').dataset.childId;
+        addParamModal.style.display = 'flex';
+    });
+    
+    card.querySelector('.icon-btn:nth-child(2)').addEventListener('click', (e) => {
+        currentChildIdForParam = e.target.closest('.icon-btn').dataset.childId;
+        removeLastCustomParam(currentChildIdForParam);
+    });
+    
+    // Обработчики изменения параметров
+    card.querySelectorAll('.param-value').forEach(input => {
+        input.addEventListener('input', () => {
+            if (childrenData[childId] && childrenData[childId].params) {
+                childrenData[childId].params[input.dataset.param] = input.value;
+            }
+        });
+    });
+    
+    card.classList.add('new-card');
+    setTimeout(() => {
+        card.classList.remove('new-card');
+    }, 300);
+}
+
+// Новая функция для форматирования возраста
+function formatAge(years, months, days) {
+    const parts = [];
+    if (years > 0) parts.push(`${years} ${getRussianWordForm(years, ['год', 'года', 'лет'])}`);
+    if (months > 0) parts.push(`${months} ${getRussianWordForm(months, ['месяц', 'месяца', 'месяцев'])}`);
+    if (days > 0) parts.push(`${days} ${getRussianWordForm(days, ['день', 'дня', 'дней'])}`);
+    
+    return parts.join(', ');
+}
+
+// Функция для склонения слов
+function getRussianWordForm(number, forms) {
+    const cases = [2, 0, 1, 1, 1, 2];
+    return forms[
+        (number % 100 > 4 && number % 100 < 20) 
+            ? 2 
+            : cases[(number % 10 < 5) ? number % 10 : 5]
+    ];
+}
+
+// Функция для получения знака зодиака
+function getZodiacSign(birthDate) {
+    const day = birthDate.getDate();
+    const month = birthDate.getMonth() + 1;
+    
+    const signs = [
+        {name: "Козерог", start: [12, 22], end: [1, 19]},
+        {name: "Водолей", start: [1, 20], end: [2, 18]},
+        {name: "Рыбы", start: [2, 19], end: [3, 20]},
+        {name: "Овен", start: [3, 21], end: [4, 19]},
+        {name: "Телец", start: [4, 20], end: [5, 20]},
+        {name: "Близнецы", start: [5, 21], end: [6, 20]},
+        {name: "Рак", start: [6, 21], end: [7, 22]},
+        {name: "Лев", start: [7, 23], end: [8, 22]},
+        {name: "Дева", start: [8, 23], end: [9, 22]},
+        {name: "Весы", start: [9, 23], end: [10, 22]},
+        {name: "Скорпион", start: [10, 23], end: [11, 21]},
+        {name: "Стрелец", start: [11, 22], end: [12, 21]}
+    ];
+    
+    for (const sign of signs) {
+        if ((month === sign.start[0] && day >= sign.start[1]) || 
+            (month === sign.end[0] && day <= sign.end[1])) {
+            return sign.name.toLowerCase();
+        }
+    }
+    
+    return "";
+}
+
+// Функция для получения китайского зодиака
+function getChineseZodiac(year) {
+    const startYear = 1924; // Год крысы
+    const animals = ["крыса", "бык", "тигр", "кролик", "дракон", "змея", 
+                    "лошадь", "коза", "обезьяна", "петух", "собака", "свинья"];
+    
+    const index = (year - startYear) % 12;
+    return index >= 0 ? animals[index] : animals[12 + index];
+}
+
+
+      function deleteChild(childId) {
+    db.collection('children').doc(childId).delete()
+        .then(() => {
+            // Удаляем из локальных данных
+            delete childrenData[childId];
+            
+            // Удаляем карточку из интерфейса
+            const card = document.querySelector(`.child-card[data-child-id="${childId}"]`);
+            if (card) card.remove();
+            
+            // Сбрасываем активного ребенка
+            if (currentActiveChildId === childId) {
+                currentActiveChildId = null;
+            }
+            
+            // Если детей не осталось, покажем сообщение
+            if (Object.keys(childrenData).length === 0) {
+                childrenContainer.innerHTML = '<p>Добавьте ребенка, нажав "+"</p>';
+            }
+        })
+        .catch(error => {
+            console.error("Ошибка удаления ребенка:", error);
+            alert(`Ошибка удаления: ${error.message}`);
+        });
+}
+
+function removeLastCustomParam(childId) {
+    if (!childId || !childrenData[childId] || !childrenData[childId].customParams) return;
+    
+    const customParams = childrenData[childId].customParams;
+    const paramKeys = Object.keys(customParams);
+    
+    if (paramKeys.length === 0) {
+        alert('Нет пользовательских параметров для удаления');
+        return;
+    }
+    
+    const lastParam = paramKeys[paramKeys.length - 1];
+    
+    // Подтверждение удаления
+    if (!confirm(`Удалить параметр "${lastParam}"?`)) return;
+    
+    // Удаляем параметр локально
+    delete childrenData[childId].customParams[lastParam];
+    
+    // Обновляем отображение
+    renderCustomParams(childId, childrenData[childId].customParams);
+    
+    // Сохраняем в базе данных
+    db.collection('children').doc(childId).update({
+        [`customParams.${lastParam}`]: firebase.firestore.FieldValue.delete()
+    })
+    .then(() => console.log(`Параметр "${lastParam}" удален`))
+    .catch(error => alert(`Ошибка удаления: ${error.message}`));
+}
+
+        function renderCustomParams(childId, customParams) {
+    const container = document.getElementById(`customParams-${childId}`);
+    if (!container) {
+        console.error("Контейнер для кастомных параметров не найден!");
+        return; // прекращаем выполнение если элемента нет
+    }
+            container.innerHTML = '';
+            
+            for (const [paramName, paramValue] of Object.entries(customParams)) {
+                const paramHtml = `
+                    <div class="param-row">
+                        <div class="param-label">${paramName}</div>
+                        <input type="text" class="param-value" 
+                               data-custom-param="${paramName}" 
+                               value="${paramValue || ''}">
+                    </div>
+                `;
+                container.innerHTML += paramHtml;
+            }
+            
+            // Обработчики изменения значений
+            container.querySelectorAll('.param-value').forEach(input => {
+                input.addEventListener('input', () => {
+                    childrenData[childId].customParams[input.dataset.customParam] = input.value;
+                });
+            });
+        }
+        
+        function saveCustomParam() {
+            const paramName = document.getElementById('paramName').value;
+            
+            if (!paramName) {
+                alert('Введите название параметра');
+                return;
+            }
+            
+            if (!currentChildIdForParam) return;
+            
+            // Добавляем новый параметр
+            childrenData[currentChildIdForParam].customParams[paramName] = '';
+            
+            // Обновляем отображение
+            renderCustomParams(currentChildIdForParam, childrenData[currentChildIdForParam].customParams);
+            
+            // Сохраняем в базе данных
+            db.collection('children').doc(currentChildIdForParam).update({
+                [`customParams.${paramName}`]: ''
+            })
+            .then(() => {
+                addParamModal.style.display = 'none';
+                document.getElementById('paramName').value = '';
+            })
+            .catch(error => alert(`Ошибка: ${error.message}`));
+        }
+        
+function saveRecord(childId) {
+    if (!childrenData[childId]) return;
+    
+    // Рассчитываем возраст на момент сохранения
+    const childData = childrenData[childId];
+    const birthDate = new Date(childData.birthdate);
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    let days = today.getDate() - birthDate.getDate();
+    
+    if (days < 0) {
+        months--;
+        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    }
+    
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+    
+    // Создаем новую запись
+    const newRecord = {
+        date: new Date().toISOString(),
+        ageAtRecord: `${years}.${months}.${days}`,
+        params: {
+            height: childData.params.height || '',
+            weight: childData.params.weight || '',
+            shoeSize: childData.params.shoeSize || '',
+            clothingSize: childData.params.clothingSize || ''
+        },
+        customParams: { ...childData.customParams }
+    };
+    
+    // Добавляем запись в локальные данные
+    childrenData[childId].records = childrenData[childId].records || [];
+    childrenData[childId].records.push(newRecord);
+    
+    // Обновляем в базе данных
+    db.collection('children').doc(childId).update({
+        records: firebase.firestore.FieldValue.arrayUnion(newRecord)
+    })
+    .then(() => {
+        renderHistory(childId, childrenData[childId].records);
+        alert('Запись сохранена!');
+    })
+    .catch(error => {
+        console.error("Ошибка сохранения записи:", error);
+        alert(`Ошибка сохранения: ${error.message}`);
+    });
+}
+        
+function renderHistory(childId, records) {
+    const container = document.getElementById(`history-${childId}`);
+    container.innerHTML = '';
+    
+    if (!records || records.length === 0) {
+        container.innerHTML = '<p>Нет сохраненных записей</p>';
+        return;
+    }
+    
+    // Создаем копию массива для сортировки (не изменяем оригинал)
+    const sortedRecords = [...records].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+    );
+    
+    sortedRecords.forEach(record => {
+        const recordDate = new Date(record.date);
+        // Используем date как уникальный идентификатор
+        const recordId = record.date;
+        
+        const recordHtml = `
+            <div class="history-item" data-record-id="${recordId}">
+                <div class="history-header">
+                    <div class="history-date">${formatDate(recordDate, true)}</div>
+                    <button class="delete-history-btn" data-record-id="${recordId}">✕</button>
+                </div>
+                <div class="history-details">
+                    <div class="history-params">
+                        ${renderHistoryParams(record)}
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += recordHtml;
+    });
+    
+    // Обработчики событий
+    container.addEventListener('click', function(e) {
+        // Раскрытие/скрытие деталей
+        if (e.target.closest('.history-header')) {
+            const historyItem = e.target.closest('.history-item');
+            const details = historyItem.querySelector('.history-details');
+            details.style.display = details.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Удаление записи
+        if (e.target.classList.contains('delete-history-btn')) {
+            e.stopPropagation();
+            const recordId = e.target.dataset.recordId;
+            if (confirm('Удалить эту запись?')) {
+                deleteHistoryRecord(childId, recordId);
+            }
+        }
+    });
+}
+
+// Новая функция для отображения параметров записи
+
+function renderHistoryParams(record) {
+    let html = '';
+    
+    // Возраст без подписи
+    if (record.ageAtRecord) {
+        html += `<div class="history-age">${record.ageAtRecord}</div>`;
+    }
+    
+    const mainParams = {
+        height: 'Рост, см',
+        weight: 'Вес, кг',
+        shoeSize: 'Обувь',
+        clothingSize: 'Одежда'
+    };
+    
+    // Основные параметры
+    for (const [key, label] of Object.entries(mainParams)) {
+        const value = record.params[key];
+        if (value !== undefined && value !== null && value !== '') {
+            html += `<div class="param-row">
+                <span class="param-label">${label}:</span>
+                <span class="param-value">${value}</span>
+            </div>`;
+        }
+    }
+    
+    // Кастомные параметры
+    for (const [key, value] of Object.entries(record.customParams || {})) {
+        if (value !== undefined && value !== null && value !== '') {
+            html += `<div class="param-row">
+                <span class="param-label">${key}:</span>
+                <span class="param-value">${value}</span>
+            </div>`;
+        }
+    }
+    
+    return html || '<p>Нет данных параметров</p>';
+}
+
+// Функция удаления записи истории
+function deleteHistoryRecord(childId, recordId) {
+    const childRef = db.collection('children').doc(childId);
+    
+    db.runTransaction((transaction) => {
+        return transaction.get(childRef).then((doc) => {
+            if (!doc.exists) {
+                throw new Error('Документ не существует!');
+            }
+            
+            const records = [...doc.data().records];
+            // Находим индекс записи по ID (дате создания)
+            const recordIndex = records.findIndex(r => r.date === recordId);
+            
+            if (recordIndex === -1) {
+                throw new Error('Запись не найдена');
+            }
+            
+            // Удаляем запись
+            records.splice(recordIndex, 1);
+            
+            // Обновляем документ
+            transaction.update(childRef, { records: records });
+            return recordIndex;
+        });
+    })
+    .then((recordIndex) => {
+        // Обновляем локальные данные
+        const childRecords = childrenData[childId].records;
+        const localIndex = childRecords.findIndex(r => r.date === recordId);
+        
+        if (localIndex !== -1) {
+            childRecords.splice(localIndex, 1);
+        }
+        
+        // Перерисовываем историю
+        renderHistory(childId, childRecords);
+        alert('Запись удалена!');
+    })
+    .catch((error) => {
+        console.error('Ошибка удаления записи:', error);
+        alert('Не удалось удалить запись: ' + error.message);
+    });
+}
+
+        // Вспомогательные функции
+function formatDate(date, short = false) {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString();
+    
+    if (short) return `${day}.${month}.${year.slice(2)}`; // 13.09.89
+    return `${day}.${month}.${year}`; // 13.09.1989
+}
+        
+        // Запуск приложения
+        window.addEventListener('DOMContentLoaded', init);
+        console.log("Firebase инициализирован:", firebase.app().name);
+
+    </script>
+    <footer style="text-align: center; padding: 20px; margin-top: 30px; font-size: 0.8rem; color: #666;">
+    <div>
+        <a href="/privacy-policy.html" style="margin-right: 15px;">Политика конфиденциальности</a>
+        <a href="/terms-of-service.html">Условия использования</a>
+    </div>
+    <p style="margin-top: 10px;">&copy; 2025 Детские параметры</p>
+    <p>Разработано: Frupis_art | Контакт: fly4ik@yandex.ru</p>
+</footer>
+</body>
+</html>
